@@ -12,6 +12,8 @@ namespace Parking.Api.Data
         public DbSet<Veiculo> Veiculos => Set<Veiculo>();
         public DbSet<Fatura> Faturas => Set<Fatura>();
         public DbSet<FaturaVeiculo> FaturasVeiculos => Set<FaturaVeiculo>();
+        public DbSet<VeiculoHistorico> VeiculosHistorico => Set<VeiculoHistorico>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -66,6 +68,28 @@ namespace Parking.Api.Data
                 e.Property(x => x.FaturaId).HasColumnName("fatura_id");
                 e.Property(x => x.VeiculoId).HasColumnName("veiculo_id");
             });
+
+            modelBuilder.Entity<VeiculoHistorico>(e =>
+            {
+                e.ToTable("veiculo_historico", "public");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).HasColumnName("id");
+                e.Property(x => x.VeiculoId).HasColumnName("veiculo_id").IsRequired();
+                e.Property(x => x.ClienteId).HasColumnName("cliente_id").IsRequired();
+                e.Property(x => x.Inicio).HasColumnName("inicio").IsRequired();
+                e.Property(x => x.Fim).HasColumnName("fim");
+
+                e.HasOne(x => x.Veiculo)
+                 .WithMany() // ou .WithMany(v => v.Historico) se você criar coleção na entidade Veiculo
+                 .HasForeignKey(x => x.VeiculoId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.Cliente)
+                 .WithMany() // ou .WithMany(c => c.HistoricoVeiculos) se criar coleção na entidade Cliente
+                 .HasForeignKey(x => x.ClienteId)
+                 .OnDelete(DeleteBehavior.Restrict);
+            });
+
         }
     }
 }

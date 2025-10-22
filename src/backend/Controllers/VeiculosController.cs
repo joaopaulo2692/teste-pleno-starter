@@ -65,12 +65,11 @@ namespace Parking.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VeiculoUpdateDto dto)
         {
-           
             var v = await _db.Veiculos.FindAsync(id);
             if (v == null)
                 return NotFound("Veículo não encontrado.");
 
-         
+            // Sanitiza e valida placa
             var placa = _placa.Sanitizar(dto.Placa);
             if (!_placa.EhValida(placa))
                 return BadRequest("Placa inválida.");
@@ -90,19 +89,37 @@ namespace Parking.Api.Controllers
             if (dto.Ano.HasValue)
                 v.Ano = dto.Ano.Value;
 
-            // Atualiza o cliente associado
-            v.ClienteId = dto.ClienteId;
+            // Atualiza o cliente associado e registra histórico
+            if (v.ClienteId != dto.ClienteId)
+            {
+                // Fecha histórico anterior
+                var ultimoHist = await _db.VeiculosHistorico
+                    .Where(h => h.VeiculoId == v.Id && h.Fim == null)
+                    .FirstOrDefaultAsync();
+
+                if (ultimoHist != null)
+                    ultimoHist.Fim = DateTime.UtcNow;
+
+                // Cria novo histórico
+                _db.VeiculosHistorico.Add(new VeiculoHistorico
+                {
+                    VeiculoId = v.Id,
+                    ClienteId = dto.ClienteId,
+                    Inicio = DateTime.UtcNow
+                });
+
+                v.ClienteId = dto.ClienteId;
+            }
 
             await _db.SaveChangesAsync();
 
-            //return Ok(v);
             return Ok(new
             {
                 message = "Veículo atualizado com sucesso",
                 veiculo = v
             });
-
         }
+
 
 
         [HttpDelete("{id:guid}")]
