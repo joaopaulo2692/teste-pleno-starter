@@ -7,6 +7,8 @@ export default function ClientesPage(){
   const [filtro, setFiltro] = useState('')
   const [mensalista, setMensalista] = useState('all')
   const [form, setForm] = useState({ nome:'', telefone:'', endereco:'', mensalista:false, valorMensalidade:'' })
+  const [erro, setErro] = useState('')         // para mensagens de erro
+  const [sucesso, setSucesso] = useState('')   // para mensagens de sucesso
 
   const q = useQuery({
     queryKey:['clientes', filtro, mensalista],
@@ -15,7 +17,18 @@ export default function ClientesPage(){
 
   const create = useMutation({
     mutationFn: (data) => apiPost('/api/clientes', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey:['clientes'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey:['clientes'] })
+      setForm({ nome:'', telefone:'', endereco:'', mensalista:false, valorMensalidade:'' })
+      setErro('')          // limpa o erro
+      setSucesso('Cliente criado com sucesso!') // mostra sucesso
+      setTimeout(() => setSucesso(''), 3000)   // limpa a mensagem após 3s
+    },
+    onError: (error) => {
+      if (error instanceof Error) setErro(error.message)
+      else setErro('Erro ao criar cliente')
+      setSucesso('') // limpa a mensagem de sucesso caso haja erro
+    }
   })
 
   const remover = useMutation({
@@ -51,11 +64,16 @@ export default function ClientesPage(){
           <input placeholder="Valor mensalidade" value={form.valorMensalidade} onChange={e=>setForm({...form, valorMensalidade:e.target.value})}/>
           <div/>
           <div/>
-          <button onClick={()=>create.mutate({
-            nome:form.nome, telefone:form.telefone, endereco:form.endereco,
-            mensalista:form.mensalista, valorMensalidade:form.valorMensalidade? Number(form.valorMensalidade): null
-          })}>Salvar</button>
+          <button onClick={()=>{
+            create.mutate({
+              nome:form.nome, telefone:form.telefone, endereco:form.endereco,
+              mensalista:form.mensalista, valorMensalidade:form.valorMensalidade? Number(form.valorMensalidade): null
+            })
+          }}>Salvar</button>
         </div>
+
+        {erro && <p style={{color:'red'}}>{erro}</p>}
+        {sucesso && <p style={{color:'green'}}>{sucesso}</p>}
       </div>
 
       <h3 style={{marginTop:16}}>Lista</h3>
