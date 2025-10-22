@@ -68,27 +68,41 @@ namespace Parking.Api.Data
                 e.Property(x => x.FaturaId).HasColumnName("fatura_id");
                 e.Property(x => x.VeiculoId).HasColumnName("veiculo_id");
             });
-
             modelBuilder.Entity<VeiculoHistorico>(e =>
             {
-                e.ToTable("veiculo_historico", "public");
+                e.ToTable("veiculoshistorico", "public");
                 e.HasKey(x => x.Id);
+
                 e.Property(x => x.Id).HasColumnName("id");
                 e.Property(x => x.VeiculoId).HasColumnName("veiculo_id").IsRequired();
                 e.Property(x => x.ClienteId).HasColumnName("cliente_id").IsRequired();
                 e.Property(x => x.Inicio).HasColumnName("inicio").IsRequired();
                 e.Property(x => x.Fim).HasColumnName("fim");
+                e.Property(x => x.Inicio)
+ .HasColumnName("inicio")
+ .IsRequired()
+ .HasComment("Data de início do histórico");
 
-                e.HasOne(x => x.Veiculo)
-                 .WithMany() // ou .WithMany(v => v.Historico) se você criar coleção na entidade Veiculo
-                 .HasForeignKey(x => x.VeiculoId)
-                 .OnDelete(DeleteBehavior.Restrict);
 
-                e.HasOne(x => x.Cliente)
-                 .WithMany() // ou .WithMany(c => c.HistoricoVeiculos) se criar coleção na entidade Cliente
-                 .HasForeignKey(x => x.ClienteId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                // Relacionamento Veiculo
+                e.HasOne(vh => vh.Veiculo)
+                 .WithMany(v => v.Historicos)
+                 .HasForeignKey(vh => vh.VeiculoId)
+                 .OnDelete(DeleteBehavior.Restrict)
+                 .HasConstraintName("FK_VeiculoHistorico_Veiculo");
+
+                // Relacionamento Cliente
+                e.HasOne(vh => vh.Cliente)
+                 .WithMany(c => c.HistoricoVeiculos)
+                 .HasForeignKey(vh => vh.ClienteId)
+                 .OnDelete(DeleteBehavior.Restrict)
+                 .HasConstraintName("FK_VeiculoHistorico_Cliente");
             });
+
+
+
+
+
 
         }
     }

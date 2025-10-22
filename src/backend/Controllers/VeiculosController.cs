@@ -65,50 +65,70 @@ namespace Parking.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VeiculoUpdateDto dto)
         {
-            var v = await _db.Veiculos.FindAsync(id);
-            if (v == null)
-                return NotFound("Veículo não encontrado.");
+            // Busca o veículo
+            var veiculo = await _db.Veiculos.FindAsync(id);
+            if (veiculo == null)
+                return NotFound(new { message = "Veículo não encontrado." });
 
             // Sanitiza e valida placa
             var placa = _placa.Sanitizar(dto.Placa);
             if (!_placa.EhValida(placa))
-                return BadRequest("Placa inválida.");
+                return BadRequest(new { message = "Placa inválida." });
+
+            var cliente = await _db.Clientes.FindAsync(dto.ClienteId);
+            if (cliente == null)
+                return NotFound(new { message = "Cliente não encontrado." });
 
             // Verifica duplicidade de placa
-            if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id))
-                return Conflict("Já existe outro veículo com esta placa.");
+            if (await _db.Veiculos.AnyAsync(v => v.Placa == placa && v.Id != id))
+                return Conflict(new { message = "Já existe outro veículo com esta placa." });
 
             // Verifica se o cliente existe
             if (!await _db.Clientes.AnyAsync(c => c.Id == dto.ClienteId))
-                return BadRequest("Cliente informado não existe.");
+                return BadRequest(new { message = "Cliente informado não existe." });
 
-            // Atualiza os campos (parcial)
-            v.Placa = placa;
+            // Atualiza campos parciais
+            veiculo.Cliente = cliente;
+            veiculo.ClienteId = cliente.Id;
+            veiculo.Placa = placa;
             if (!string.IsNullOrEmpty(dto.Modelo))
-                v.Modelo = dto.Modelo;
+                veiculo.Modelo = dto.Modelo;
             if (dto.Ano.HasValue)
-                v.Ano = dto.Ano.Value;
+                veiculo.Ano = dto.Ano.Value;
 
-            // Atualiza o cliente associado e registra histórico
-            if (v.ClienteId != dto.ClienteId)
+            // Atualiza histórico se o cliente mudou
+            if (veiculo.ClienteId != dto.ClienteId)
             {
-                // Fecha histórico anterior
+                // Fecha histórico anterior, se existir
                 var ultimoHist = await _db.VeiculosHistorico
-                    .Where(h => h.VeiculoId == v.Id && h.Fim == null)
+                    .Where(h => h.VeiculoId == veiculo.Id && h.Fim == null)
                     .FirstOrDefaultAsync();
 
                 if (ultimoHist != null)
+                {
                     ultimoHist.Fim = DateTime.UtcNow;
+                }
+                else
+                {
+                    // Nenhum histórico anterior: cria histórico inicial do cliente antigo
+                    _db.VeiculosHistorico.Add(new VeiculoHistorico
+                    {
+                        VeiculoId = veiculo.Id,
+                        ClienteId = veiculo.ClienteId,
+                        Inicio = veiculo.DataInclusao,
+                        Fim = DateTime.UtcNow
+                    });
+                }
 
-                // Cria novo histórico
+                // Cria novo histórico para o novo cliente
                 _db.VeiculosHistorico.Add(new VeiculoHistorico
                 {
-                    VeiculoId = v.Id,
+                    VeiculoId = veiculo.Id,
                     ClienteId = dto.ClienteId,
                     Inicio = DateTime.UtcNow
                 });
 
-                v.ClienteId = dto.ClienteId;
+                veiculo.ClienteId = dto.ClienteId;
             }
 
             await _db.SaveChangesAsync();
@@ -116,7 +136,7 @@ namespace Parking.Api.Controllers
             return Ok(new
             {
                 message = "Veículo atualizado com sucesso",
-                veiculo = v
+                veiculo
             });
         }
 

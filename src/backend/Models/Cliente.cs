@@ -14,5 +14,9 @@ namespace Parking.Api.Models
         public DateTime DataInclusao { get; set; } = DateTime.UtcNow;
 
         public List<Veiculo> Veiculos { get; set; } = new();
+
+        public virtual ICollection<VeiculoHistorico> HistoricoVeiculos { get; set; } = new List<VeiculoHistorico>();
+
+        
     }
 }
