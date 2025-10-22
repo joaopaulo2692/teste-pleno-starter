@@ -46,22 +46,64 @@ namespace Parking.Api.Controllers
         }
 
         // BUG propositado: não invalida/atualiza nada no front; candidato deve ajustar no front (React Query) ou aqui (retornar entidade e orientar)
+        //[HttpPut("{id:guid}")]
+        //public async Task<IActionResult> Update(Guid id, [FromBody] VeiculoUpdateDto dto)
+        //{
+        //    var v = await _db.Veiculos.FindAsync(id);
+        //    if (v == null) return NotFound();
+        //    var placa = _placa.Sanitizar(dto.Placa);
+        //    if (!_placa.EhValida(placa)) return BadRequest("Placa inválida.");
+        //    if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id)) return Conflict("Placa já existe.");
+
+        //    v.Placa = placa;
+        //    v.Modelo = dto.Modelo;
+        //    v.Ano = dto.Ano;
+        //    v.ClienteId = dto.ClienteId; // troca de cliente permitida
+        //    await _db.SaveChangesAsync();
+        //    return Ok(v);
+        //}
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VeiculoUpdateDto dto)
         {
+           
             var v = await _db.Veiculos.FindAsync(id);
-            if (v == null) return NotFound();
-            var placa = _placa.Sanitizar(dto.Placa);
-            if (!_placa.EhValida(placa)) return BadRequest("Placa inválida.");
-            if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id)) return Conflict("Placa já existe.");
+            if (v == null)
+                return NotFound("Veículo não encontrado.");
 
+         
+            var placa = _placa.Sanitizar(dto.Placa);
+            if (!_placa.EhValida(placa))
+                return BadRequest("Placa inválida.");
+
+            // Verifica duplicidade de placa
+            if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id))
+                return Conflict("Já existe outro veículo com esta placa.");
+
+            // Verifica se o cliente existe
+            if (!await _db.Clientes.AnyAsync(c => c.Id == dto.ClienteId))
+                return BadRequest("Cliente informado não existe.");
+
+            // Atualiza os campos (parcial)
             v.Placa = placa;
-            v.Modelo = dto.Modelo;
-            v.Ano = dto.Ano;
-            v.ClienteId = dto.ClienteId; // troca de cliente permitida
+            if (!string.IsNullOrEmpty(dto.Modelo))
+                v.Modelo = dto.Modelo;
+            if (dto.Ano.HasValue)
+                v.Ano = dto.Ano.Value;
+
+            // Atualiza o cliente associado
+            v.ClienteId = dto.ClienteId;
+
             await _db.SaveChangesAsync();
-            return Ok(v);
+
+            //return Ok(v);
+            return Ok(new
+            {
+                message = "Veículo atualizado com sucesso",
+                veiculo = v
+            });
+
         }
+
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
