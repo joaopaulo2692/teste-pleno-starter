@@ -88,7 +88,7 @@ namespace Parking.Api.Data
                 e.HasOne(vh => vh.Veiculo)
                  .WithMany(v => v.Historicos)
                  .HasForeignKey(vh => vh.VeiculoId)
-                 .OnDelete(DeleteBehavior.Restrict)
+                 .OnDelete(DeleteBehavior.Cascade)
                  .HasConstraintName("FK_VeiculoHistorico_Veiculo");
 
                 // Relacionamento Cliente

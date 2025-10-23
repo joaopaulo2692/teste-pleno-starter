@@ -30,7 +30,7 @@ export default function FaturamentoPage(){
             </tbody>
           </table>
         )}
-        <p className="note">BUG proposital: API associa veículos pelo dono atual, e não pelo dono na data de corte.</p>
+        
       </div>
     </div>
   )

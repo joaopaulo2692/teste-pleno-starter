@@ -18,7 +18,13 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<PlacaService>();
 builder.Services.AddScoped<FaturamentoService>();
 
-builder.Services.AddControllers();
+//builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // Desabilita a verificação automática de ModelState pelo [ApiController]
+        options.SuppressModelStateInvalidFilter = true;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

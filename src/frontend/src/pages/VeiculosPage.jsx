@@ -9,14 +9,41 @@ export default function VeiculosPage() {
   const veiculos = useQuery({ queryKey: ['veiculos', clienteId], queryFn: () => apiGet(`/api/veiculos${clienteId ? `?clienteId=${clienteId}` : ''}`) })
   const [form, setForm] = useState({ placa: '', modelo: '', ano: '', clienteId: '' })
 
+  // const create = useMutation({
+  //   mutationFn: (data) => apiPost('/api/veiculos', data),
+  //   onSuccess: () => qc.invalidateQueries({ queryKey: ['veiculos'] })
+  // })
   const create = useMutation({
-    mutationFn: (data) => apiPost('/api/veiculos', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['veiculos'] })
-  })
+  mutationFn: (data) => apiPost('/api/veiculos', data),
+  onSuccess: (data) => {
+    qc.invalidateQueries({ queryKey: ['veiculos'] })
+    alert('Veículo criado com sucesso!')
+    setForm({ placa: '', modelo: '', ano: '', clienteId: clienteId }) // limpa formulário
+  },
+  onError: (err) => {
+    // Se a API retornar { message: "..." } ou apenas string
+    const msg = err?.response?.data?.message || err?.message || 'Erro ao criar veículo.'
+    alert(msg)
+  }
+})
+
+  // const update = useMutation({
+  //   mutationFn: ({ id, data }) => apiPut(`/api/veiculos/${id}`, data),
+  //   onSuccess: () => qc.invalidateQueries({ queryKey: ['veiculos'] })
+  // })
+
   const update = useMutation({
-    mutationFn: ({ id, data }) => apiPut(`/api/veiculos/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['veiculos'] })
-  })
+  mutationFn: ({ id, data }) => apiPut(`/api/veiculos/${id}`, data),
+  onSuccess: (data) => {
+    qc.invalidateQueries({ queryKey: ['veiculos'] })
+    alert('Veículo atualizado com sucesso!')
+  },
+  onError: (err) => {
+    const msg = err?.response?.data?.message || err?.message || 'Erro ao atualizar veículo.'
+    alert(msg)
+  }
+})
+
   const remover = useMutation({
     mutationFn: (id) => apiDelete(`/api/veiculos/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['veiculos'] })

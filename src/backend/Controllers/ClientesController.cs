@@ -35,6 +35,24 @@ namespace Parking.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] ClienteCreateDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                // 1. Encontra o primeiro erro de validação
+                var primeiroErro = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .FirstOrDefault()?
+                    .ErrorMessage;
+
+                // 2. Retorna 400 Bad Request contendo a string pura
+                if (primeiroErro != null)
+                {
+                    // Retorna o status 400 com a string como corpo da resposta.
+                    // O Content-Type será text/plain ou application/json com uma string, dependendo
+                    // do middleware, mas o resultado é uma string simples.
+                    return BadRequest($"{primeiroErro}");
+                }
+            }
+        
             var existe = await _db.Clientes.AnyAsync(c => c.Nome == dto.Nome && c.Telefone == dto.Telefone);
             if (existe) return Conflict("Cliente já existe.");
 
@@ -61,6 +79,23 @@ namespace Parking.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] ClienteUpdateDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                // 1. Encontra o primeiro erro de validação
+                var primeiroErro = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .FirstOrDefault()?
+                    .ErrorMessage;
+
+                // 2. Retorna 400 Bad Request contendo a string pura
+                if (primeiroErro != null)
+                {
+                    // Retorna o status 400 com a string como corpo da resposta.
+                    // O Content-Type será text/plain ou application/json com uma string, dependendo
+                    // do middleware, mas o resultado é uma string simples.
+                    return BadRequest($"{primeiroErro}");
+                }
+            }
             var c = await _db.Clientes.FindAsync(id);
 
 
