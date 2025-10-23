@@ -62,9 +62,19 @@ namespace Parking.Api.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] ClienteUpdateDto dto)
         {
             var c = await _db.Clientes.FindAsync(id);
-            var temNomeETelefone = await _db.Clientes.AnyAsync(x => x.Nome == dto.Nome && x.Telefone == dto.Telefone);
-            
-            if (temNomeETelefone) return Conflict("Já existe um cliente com esse nome e telefone.");
+
+
+            //var temNomeETelefone = await _db.Clientes.AnyAsync(x => x.Nome == dto.Nome && x.Telefone == dto.Telefone);
+
+            //if (temNomeETelefone) return Conflict("Já existe um cliente com esse nome e telefone.");
+
+            var temNomeETelefoneEmOutroCliente = await _db.Clientes
+                .AnyAsync(x => x.Id != id && x.Nome == dto.Nome && x.Telefone == dto.Telefone);
+
+            if (temNomeETelefoneEmOutroCliente)
+            {
+                return Conflict("Já existe outro cliente com esse nome e telefone.");
+            }
 
             if (c == null) return NotFound();
             c.Nome = dto.Nome;
